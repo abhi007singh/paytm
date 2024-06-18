@@ -6,6 +6,7 @@ const { JWT_SECRET } = require('../config');
 const signup = async (req, res) => {
     try {
         const { success, data } = validateSignup(req.body);
+
         if (!success) return res.status(411).json({ message: 'ValidationError', error: data });
 
         const existingUser = await User.findOne({
@@ -96,13 +97,16 @@ const bulkUsers = async (req, res) => {
     try {
         const { filter } = req.query;
 
-        const users = await User.find({
-            $or: [
-                { firstname: { $regex: filter } },
-                { lastname: { $regex: filter } }
-            ]
-        })
-            .select('firstname lastname _id');
+        let query = {};
+
+        if (filter) {
+            query.$or = [
+                { firstname: { $regex: filter, $options: 'i' } },
+                { lastname: { $regex: filter, $options: 'i' } }
+            ];
+        }
+
+        const users = await User.find(query).select('firstname lastname _id');
 
         return res.json({ users: users });
     } catch (error) {
